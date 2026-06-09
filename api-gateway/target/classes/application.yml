@@ -1,0 +1,146 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+
+  # Redis for rate limiting
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+  cloud:
+    gateway:
+      # ── Global CORS ───────────────────────────────────────────────
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins:
+              - "http://localhost:3000"
+              - "${FRONTEND_URL:http://localhost:3000}"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - PATCH
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
+            maxAge: 3600
+
+      # ── Default filters applied to ALL routes ────────────────────
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+
+      # ── Service Routes ────────────────────────────────────────────
+      routes:
+
+        # Auth Service — public (no JWT filter)
+        - id: auth-service-public
+          uri: ${AUTH_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/v1/auth/login, /api/v1/auth/refresh, /api/v1/auth/register
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20
+                key-resolver: "#{@ipKeyResolver}"
+
+        # Auth Service — protected (needs valid JWT)
+        - id: auth-service-protected
+          uri: ${AUTH_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/v1/auth/**
+          filters:
+            - JwtAuthFilter
+
+        # Company Service
+        - id: company-service
+          uri: ${COMPANY_SERVICE_URL:http://localhost:8082}
+          predicates:
+            - Path=/api/v1/companies/**
+          filters:
+            - JwtAuthFilter
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 20
+                redis-rate-limiter.burstCapacity: 40
+                key-resolver: "#{@userKeyResolver}"
+
+        # Employee Service
+        - id: employee-service
+          uri: ${EMPLOYEE_SERVICE_URL:http://localhost:8083}
+          predicates:
+            - Path=/api/v1/employees/**, /api/v1/departments/**
+          filters:
+            - JwtAuthFilter
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 30
+                redis-rate-limiter.burstCapacity: 60
+                key-resolver: "#{@userKeyResolver}"
+
+        # Team Service
+        - id: team-service
+          uri: ${TEAM_SERVICE_URL:http://localhost:8084}
+          predicates:
+            - Path=/api/v1/teams/**
+          filters:
+            - JwtAuthFilter
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 30
+                redis-rate-limiter.burstCapacity: 60
+                key-resolver: "#{@userKeyResolver}"
+
+        # Dashboard Service
+        - id: dashboard-service
+          uri: ${DASHBOARD_SERVICE_URL:http://localhost:8085}
+          predicates:
+            - Path=/api/v1/dashboards/**
+          filters:
+            - JwtAuthFilter
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 20
+                redis-rate-limiter.burstCapacity: 40
+                key-resolver: "#{@userKeyResolver}"
+
+        # Role Service
+        - id: role-service
+          uri: ${ROLE_SERVICE_URL:http://localhost:8086}
+          predicates:
+            - Path=/api/v1/roles/**
+          filters:
+            - JwtAuthFilter
+
+        # Pricing Service
+        - id: pricing-service
+          uri: ${PRICING_SERVICE_URL:http://localhost:8087}
+          predicates:
+            - Path=/api/v1/plans/**, /api/v1/subscriptions/**
+          filters:
+            - JwtAuthFilter
+
+# JWT secret — must match auth-service
+jwt:
+  secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, gateway
+  endpoint:
+    gateway:
+      enabled: true
+
+logging:
+  level:
+    org.springframework.cloud.gateway: INFO
+    com.yourapp.gateway: DEBUG

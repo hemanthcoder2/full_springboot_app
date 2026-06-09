@@ -1,0 +1,52 @@
+pipeline {
+    agent any
+
+    environment {
+        IMAGE_NAME = 'api-gateway'
+        IMAGE_TAG  = "${env.BUILD_NUMBER}"
+        REGISTRY   = 'your-dockerhub-username'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps { checkout scm }
+        }
+
+        stage('Build & Test') {
+            steps { sh 'mvn clean verify' }
+        }
+
+        stage('Docker Build') {
+            steps {
+                sh "docker build -t ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG} ."
+                sh "docker tag ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG} ${REGISTRY}/${IMAGE_NAME}:latest"
+            }
+        }
+
+        stage('Docker Push') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-creds',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh "echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin"
+                    sh "docker push ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+                    sh "docker push ${REGISTRY}/${IMAGE_NAME}:latest"
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                sh "docker-compose pull && docker-compose up -d api-gateway"
+            }
+        }
+    }
+
+    post {
+        success { echo 'API Gateway deployed!' }
+        failure { echo 'Build failed.' }
+        always  { sh 'docker logout' }
+    }
+}

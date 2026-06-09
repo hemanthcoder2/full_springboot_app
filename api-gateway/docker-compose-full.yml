@@ -1,0 +1,102 @@
+version: '3.8'
+
+# ─────────────────────────────────────────────────────────────
+#  Full platform — all services + infrastructure
+#  Run: docker-compose up -d
+# ─────────────────────────────────────────────────────────────
+
+services:
+
+  # ── Infrastructure ──────────────────────────────────────────
+
+  mysql:
+    image: mysql:8.0
+    container_name: platform-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_PASSWORD:-root}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: platform-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 5
+
+  # ── API Gateway (entry point) ────────────────────────────────
+
+  api-gateway:
+    build: ./api-gateway
+    container_name: api-gateway
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      REDIS_HOST: redis
+      JWT_SECRET: ${JWT_SECRET:-404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      AUTH_SERVICE_URL:      http://auth-service:8081
+      COMPANY_SERVICE_URL:   http://company-service:8082
+      EMPLOYEE_SERVICE_URL:  http://employee-service:8083
+      TEAM_SERVICE_URL:      http://team-service:8084
+      DASHBOARD_SERVICE_URL: http://dashboard-service:8085
+      ROLE_SERVICE_URL:      http://role-service:8086
+      PRICING_SERVICE_URL:   http://pricing-service:8087
+
+  # ── Auth Service ─────────────────────────────────────────────
+
+  auth-service:
+    build: ./auth-service
+    container_name: auth-service
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+    environment:
+      DB_USERNAME: root
+      DB_PASSWORD: ${DB_PASSWORD:-root}
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/auth_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      JWT_SECRET: ${JWT_SECRET:-404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+
+  # ── Company Service ──────────────────────────────────────────
+  # (to be built — placeholder)
+  # company-service:
+  #   build: ./company-service
+  #   ...
+
+  # ── Employee Service ─────────────────────────────────────────
+  # (to be built)
+
+  # ── Team Service ─────────────────────────────────────────────
+  # (to be built)
+
+  # ── Dashboard Service ────────────────────────────────────────
+  # (to be built)
+
+  # ── Role Service ─────────────────────────────────────────────
+  # (to be built)
+
+  # ── Pricing Service ──────────────────────────────────────────
+  # (to be built)
+
+volumes:
+  mysql_data:
