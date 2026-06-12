@@ -15,9 +15,20 @@
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="false">
           <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.46/lombok-1.18.46.jar" />
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.46/lombok-1.18.46.jar" />
         </processorPath>
         <module name="company-service (1)" />
         <module name="employee-service" />
+      </profile>
+      <profile name="Annotation profile for dashboard-service" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.46/lombok-1.18.46.jar" />
+        </processorPath>
+        <module name="dashboard-service" />
+        <module name="teams-service" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
@@ -30,7 +41,9 @@
       <module name="auth-service" options="-parameters" />
       <module name="company-service" options="-parameters" />
       <module name="company-service (1)" options="-parameters" />
+      <module name="dashboard-service" options="-parameters" />
       <module name="employee-service" options="-parameters" />
+      <module name="teams-service" options="-parameters" />
     </option>
   </component>
 </project>
