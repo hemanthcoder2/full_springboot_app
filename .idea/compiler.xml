@@ -6,8 +6,14 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="api-gateway" />
         <module name="auth-service" />
+        <module name="dashboard-service" />
+        <module name="teams-service" />
+        <module name="role-service" />
+        <module name="api-gateway" />
+        <module name="company-service" />
+        <module name="pricing-service" />
+        <module name="employee-service" />
       </profile>
       <profile name="Annotation profile for employee-service" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
@@ -18,22 +24,8 @@
           <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.46/lombok-1.18.46.jar" />
         </processorPath>
         <module name="company-service (1)" />
-        <module name="employee-service" />
-      </profile>
-      <profile name="Annotation profile for dashboard-service" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
-        <processorPath useClasspath="false">
-          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.46/lombok-1.18.46.jar" />
-        </processorPath>
-        <module name="dashboard-service" />
-        <module name="teams-service" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel>
-      <module name="company-service" target="17" />
-    </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
@@ -43,6 +35,8 @@
       <module name="company-service (1)" options="-parameters" />
       <module name="dashboard-service" options="-parameters" />
       <module name="employee-service" options="-parameters" />
+      <module name="pricing-service" options="-parameters" />
+      <module name="role-service" options="-parameters" />
       <module name="teams-service" options="-parameters" />
     </option>
   </component>
